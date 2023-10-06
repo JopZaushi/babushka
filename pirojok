@@ -1,0 +1,149 @@
+#include <iostream>;
+#include <vector>;
+#include <algorithm>;
+#include <cmath>;
+using namespace std;
+
+//уменьшение температуры
+float decreaseTemperature(float T) {
+	return T * 0.99;
+	//return startT * pow((1 - i) / 100, 2);
+}
+
+//подсчет вероятности
+float probabilityCalculation(float dEnergy, float T) {
+	return exp(-1 * dEnergy / T);
+}
+
+//рандом
+int Random(int min, int max)
+{
+	// Установить генератор случайных чисел
+	srand(time(NULL));
+
+	// Получить случайное число - формула
+	int num = min + rand() % (max - min + 1);
+
+	return num;
+}
+
+
+//проверка вероятности
+bool probabilityCheck(float probability) {
+	int value = Random(0, 1);
+	bool boolValue;
+	if (value <= probability) {
+		boolValue = 1;
+	}
+	else {
+		boolValue = 0;
+	}
+	return boolValue;
+}
+
+//обновление маршрута
+vector<int> generateState(vector<int> state) {
+	
+	int state1 = Random(0, state.size() - 1);
+	int state2 = Random(0, state.size() - 1);
+	while (state1 == state2) {
+		state1 = Random(0, state.size() - 1);
+	}
+
+	vector<int>::iterator a = find(state.begin(), state.end(), state1);
+	vector<int>::iterator b = find(state.begin(), state.end(), state2);
+
+	int itr_1 = distance(state.begin(), a);
+	int itr_2 = distance(state.begin(), b);
+	
+	int n = 0;
+	if (abs(itr_1 - itr_2) % 2 == 0) {
+		n = abs(itr_1 - itr_2) / 2;
+	}
+	else {
+		n = abs(itr_1 - itr_2) / 2 + 1;
+	}
+
+	if (itr_1 > itr_2) {
+		for (int i = 0; i < n; ++i) {
+			iter_swap(state.begin() + itr_2, state.begin() + itr_1);
+			itr_2++;
+			itr_1--;
+		}
+	}
+	else {
+		for (int i = 0; i < n; ++i) {
+			iter_swap(state.begin() + itr_1, state.begin() + itr_2);
+			itr_1++;
+			itr_2--;
+		}
+	}
+	return state;
+}
+
+//полный путь
+float CalculateEnergy(vector<int> state, vector<pair<float, float>> coordCity) {
+	float sum = 0;
+	for (int i = 0; i < coordCity.size() - 1; ++i) {
+		sum += sqrt(pow(coordCity[state[i + 1]].first - coordCity[state[i]].first, 2) + pow(coordCity[state[i + 1]].second - coordCity[state[i]].second, 2));
+	}
+	sum += sqrt(pow(coordCity[state[0]].first - coordCity[state[coordCity.size() - 1]].first, 2) + pow(coordCity[state[0]].second - coordCity[state[coordCity.size() - 1]].second, 2));
+	return sum;
+}
+
+int main() {
+	//задаем координаты городов
+	vector<pair<float, float>> coordCity = { {100, 100}, {141, 133}, {20, 200}, {364, 224}, {10, 380} };
+	int sizeCity = coordCity.size();//количество городов
+
+	//последовательность посещения городов
+	vector<int> currentState;
+	vector<int> possibleState;
+	for (int i = 0; i < sizeCity; ++i) {
+		currentState.push_back(i);
+	}
+	random_shuffle(currentState.begin(), currentState.end());//перемешиваем, чтобы был случайный порядок
+	
+	float currentEnergy = CalculateEnergy(currentState, coordCity);//подсчет длины маршрута
+	float possibleEnergy;
+	float probability;
+	float startT = 150;//начальная температура
+	float currentT = 150;
+
+	for (int i = 0; i < 100; ++i) {
+		//вывод
+		
+
+		//подсчет возможной последовательности маршрута
+		possibleState = generateState(currentState);
+		
+		//подсчет возможной длины пути
+		possibleEnergy = CalculateEnergy(possibleState, coordCity);
+
+		if (possibleEnergy < currentEnergy) {
+			currentEnergy = possibleEnergy;
+			currentState = possibleState;
+		}
+		else {
+			probability = probabilityCalculation(possibleEnergy - currentEnergy, currentT);
+			if (probabilityCheck(probability)) {
+				currentEnergy = possibleEnergy;
+				currentState = possibleState;
+			}
+		}
+		
+		currentT = decreaseTemperature(currentT);
+		
+
+		//условие конца
+		if (currentT <= 0.1) { 
+			break; 
+		}
+	}
+	cout << "temperature: " << currentT << " ";
+	cout << "sum_distance: " << currentEnergy << " distance: ";
+	for (int i : currentState)
+		std::cout << i << ' ';
+	cout << endl;
+	return 0;
+}
